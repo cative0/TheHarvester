@@ -26,6 +26,9 @@ def x_start(arg):
     opt_keys = [opt[0] for opt in opts]
 
     if ('-d' in opt_keys) and ('-f' in opt_keys):
+        if not os.path.exists('output'):
+            os.mkdir('output')
+
         f_index = opt_keys.index('-f')
         d_index = opt_keys.index('-d')
 
