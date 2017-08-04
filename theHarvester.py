@@ -55,21 +55,22 @@ def usage():
     print "            google 100 to 100, and pgp doesn't use this option)"
     print "       -h: use SHODAN database to query discovered hosts"
     print "\nExamples:"
-    print "        " + comm + " -d microsoft.com -l 500 -b google -h myresults.html"
+    print "        " + comm + " -d microsoft.com -l 500 -b google -f myresults.html"
     print "        " + comm + " -d microsoft.com -b pgp"
     print "        " + comm + " -d microsoft -l 200 -b linkedin"
     print "        " + comm + " -d apple.com -b googleCSE -l 500 -s 300\n"
+    print "        " + comm + " -d input/target.txt -l 500 -b google -f myresults.html"
 
 
-def start(argv):
-    if len(sys.argv) < 4:
-        usage()
-        sys.exit()
-    try:
-        opts, args = getopt.getopt(argv, "l:d:b:s:vf:nhcte:")
-    except getopt.GetoptError:
-        usage()
-        sys.exit()
+def start(opts):
+    # if len(sys.argv) < 4:
+    #     usage()
+    #     sys.exit()
+    # try:
+    #     opts, args = getopt.getopt(argv, "l:d:b:s:vf:nhcte:")
+    # except getopt.GetoptError:
+    #     usage()
+    #     sys.exit()
     start = 0
     host_ip = []
     filename = ""
@@ -456,7 +457,7 @@ def start(argv):
             print "Files saved!"
         except Exception as er:
             print "Error saving XML file: " + er
-        sys.exit()
+        # sys.exit()
 
 if __name__ == "__main__":
     try:
