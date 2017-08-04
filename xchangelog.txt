@@ -1,0 +1,5 @@
+
+20170804
+--------------
+-update start function
+-create x_start to search domain list file then pass every domain to start
