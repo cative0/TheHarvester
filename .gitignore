@@ -1,5 +1,4 @@
 *.pyc
 *.idea
 tests/myparser.py
-input
 output
