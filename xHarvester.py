@@ -44,9 +44,11 @@ def x_start(arg):
 
                 opts[d_index] = ('-d', d_value)
                 opts[f_index] = ('-f', f_value)
-
-                start(opts)
-
+                print opts
+                try:
+                    start(opts)
+                except:
+                    continue
 
 if __name__ == "__main__":
     try:
