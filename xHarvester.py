@@ -40,7 +40,7 @@ def x_start(arg):
         with open(d_file) as f:
             for line_num, line in enumerate(f):
                 d_value = line[:-1]
-                f_value = os.path.join('output', str(line_num) + line[:-1] + '.html')
+                f_value = os.path.join('output', str(line_num) + '_' + line[:-1] + '.html')
 
                 opts[d_index] = ('-d', d_value)
                 opts[f_index] = ('-f', f_value)
