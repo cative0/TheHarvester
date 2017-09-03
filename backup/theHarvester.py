@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import json
+
 import string
 import httplib
 import sys
@@ -136,6 +136,7 @@ def start(opts):
             bingapi = "no"
         search.process(bingapi)
         all_emails = search.get_emails()
+        all_hosts = search.get_hostnames()
 
     elif engine == "dogpile":
         print "[-] Searching in Dogpilesearch.."
@@ -163,6 +164,7 @@ def start(opts):
         search = baidusearch.search_baidu(word, limit)
         search.process()
         all_emails = search.get_emails()
+        all_hosts = search.get_hostnames()
 
     elif engine == "googleplus":
         print "[-] Searching in Google+ .."
@@ -209,27 +211,36 @@ def start(opts):
     elif engine == "all":
         print "Full harvest.."
         all_emails = []
+        all_hosts = []
         virtual = "basic"
         print "[-] Searching in Google.."
         search = googlesearch.search_google(word, limit, start)
         search.process()
         emails = search.get_emails()
+        hosts = search.get_hostnames()
         all_emails.extend(emails)
+        all_hosts.extend(hosts)
         print "[-] Searching in PGP Key server.."
         search = pgpsearch.search_pgp(word)
         search.process()
         emails = search.get_emails()
+        hosts = search.get_hostnames()
+        all_hosts.extend(hosts)
         all_emails.extend(emails)
         print "[-] Searching in Bing.."
         bingapi = "no"
         search = bingsearch.search_bing(word, limit, start)
         search.process(bingapi)
         emails = search.get_emails()
+        hosts = search.get_hostnames()
+        all_hosts.extend(hosts)
         all_emails.extend(emails)
         print "[-] Searching in Exalead.."
         search = exaleadsearch.search_exalead(word, limit, start)
         search.process()
         emails = search.get_emails()
+        hosts = search.get_hostnames()
+        all_hosts.extend(hosts)
         all_emails.extend(emails)
 
         #Clean up email list, sort and uniq
@@ -242,13 +253,207 @@ def start(opts):
     else:
         print "\n".join(all_emails)
 
+    print "\n[+] Hosts found in search engines:"
+    print "------------------------------------"
+    if all_hosts == []:
+        print "No hosts found"
+    else:
+        all_hosts=sorted(set(all_hosts))
+        print "[-] Resolving hostnames IPs... "
+        full_host = hostchecker.Checker(all_hosts)
+        full = full_host.check()
+        for host in full:
+            ip = host.split(':')[0]
+            print host
+            if host_ip.count(ip.lower()):
+                pass
+            else:
+                host_ip.append(ip.lower())
+
+    #DNS reverse lookup#################################################
+    dnsrev = []
+    if dnslookup == True:
+        print "\n[+] Starting active queries:"
+        analyzed_ranges = []
+        for x in full:
+            ip = x.split(":")[0]
+            range = ip.split(".")
+            range[3] = "0/24"
+            range = string.join(range, '.')
+            if not analyzed_ranges.count(range):
+                print "[-]Performing reverse lookup in :" + range
+                a = dnssearch.dns_reverse(range, True)
+                a.list()
+                res = a.process()
+                analyzed_ranges.append(range)
+            else:
+                continue
+            for x in res:
+                if x.count(word):
+                    dnsrev.append(x)
+                    if x not in full:
+                        full.append(x)
+        print "Hosts found after reverse lookup:"
+        print "---------------------------------"
+        for xh in dnsrev:
+            print xh
+    #DNS Brute force####################################################
+    dnsres = []
+    if dnsbrute == True:
+        print "\n[-] Starting DNS brute force:"
+        a = dnssearch.dns_force(word, dnsserver, verbose=True)
+        res = a.process()
+        print "\n[+] Hosts found after DNS brute force:\n"
+        for y in res:
+            print y
+            dnsres.append(y)
+            if y not in full:
+                full.append(y)
+    #DNS TLD expansion###################################################
+    dnstldres = []
+    if dnstld == True:
+        print "[-] Starting DNS TLD expansion:"
+        a = dnssearch.dns_tld(word, dnsserver, verbose=True)
+        res = a.process()
+        print "\n[+] Hosts found after DNS TLD expansion:"
+        print "=========================================="
+        for y in res:
+            print y
+            dnstldres.append(y)
+            if y not in full:
+                full.append(y)
+
+    #Virtual hosts search###############################################
+    if virtual == "basic":
+        print "[+] Virtual hosts:"
+        print "=================="
+        for l in host_ip:
+            search = bingsearch.search_bing(l, limit, start)
+            search.process_vhost()
+            res = search.get_allhostnames()
+            for x in res:
+                x = re.sub(r'[[\<\/?]*[\w]*>]*','',x)
+                x = re.sub('<','',x)
+                x = re.sub('>','',x)
+                print l + "\t" + x
+                vhost.append(l + ":" + x)
+                full.append(l + ":" + x)
+        vhost=sorted(set(vhost))
+    else:
+        pass
+    shodanres = []
+    shodanvisited = []
+    if shodan == True:
+        print "[+] Shodan Database search:"
+        for x in full:
+            print x
+            try:
+                ip = x.split(":")[0]
+                if not shodanvisited.count(ip):
+                    print "\tSearching for: " + x
+                    a = shodansearch.search_shodan(ip)
+                    shodanvisited.append(ip)
+                    results = a.run()
+                    for res in results:
+                        shodanres.append(
+                            x + "SAPO" + str(res['banner']) + "SAPO" + str(res['port']))
+            except:
+                pass
+        print "[+] Shodan results:"
+        print "==================="
+        for x in shodanres:
+            print x.split("SAPO")[0] + ":" + x.split("SAPO")[1]
+    else:
+        pass
+
+    ###################################################################
+    # Here i need to add explosion mode.
+    # Tengo que sacar los TLD para hacer esto.
+    recursion = None
+    if recursion:
+        start = 0
+        for word in vhost:
+            search = googlesearch.search_google(word, limit, start)
+            search.process()
+            emails = search.get_emails()
+            hosts = search.get_hostnames()
+            print emails
+            print hosts
+    else:
+        pass
+
     #Reporting#######################################################
     if filename != "":
         try:
-            filename = filename.split(".")[0] + ".json"
-            with open(filename, 'w') as f:
-                json.dump({'email': all_emails}, f)
+            print "[+] Saving files..."
+            html = htmlExport.htmlExport(
+                all_emails,
+                full,
+                vhost,
+                dnsres,
+                dnsrev,
+                filename,
+                word,
+                shodanres,
+                dnstldres)
+            save = html.writehtml()
+        except Exception as e:
+            print e
+            print "Error creating the file"
+        try:
+            filename = filename.split(".")[0] + ".xml"
+            file = open(filename, 'w')
+            file.write('<?xml version="1.0" encoding="UTF-8"?><theHarvester>')
+            for x in all_emails:
+                file.write('<email>' + x + '</email>')
 
+            for x in full:
+                x = x.split(":")
+                if len(x) == 2:
+                    file.write('<host>' + '<ip>' + x[0] + '</ip><hostname>' + x[1]  + '</hostname>' + '</host>')
+                else:
+                    file.write('<host>' + x + '</host>')
+            for x in vhost:
+                x = x.split(":")
+                if len(x) == 2:
+                    file.write('<vhost>' + '<ip>' + x[0] + '</ip><hostname>' + x[1]  + '</hostname>' + '</vhost>')
+                else:
+                    file.write('<vhost>' + x + '</vhost>')
+
+            if shodanres != []:
+                shodanalysis = []
+                for x in shodanres:
+                    res = x.split("SAPO")
+                    # print " res[0] " + res[0] # ip/host
+                    # print " res[1] " + res[1] # banner/info
+                    # print " res[2] " + res[2] # port
+                    file.write('<shodan>')
+                    #page.h3(res[0])
+                    file.write('<host>' + res[0] + '</host>')
+                    #page.a("Port :" + res[2])
+                    file.write('<port>' + res[2] + '</port>')
+                    #page.pre(res[1])
+                    file.write('<banner><!--' + res[1] + '--></banner>')
+                    
+                    
+                    reg_server = re.compile('Server:.*')
+                    temp = reg_server.findall(res[1])
+                    if temp != []:
+                        shodanalysis.append(res[0] + ":" + temp[0])
+                    
+                    file.write('</shodan>')
+                if shodanalysis != []:
+                    shodanalysis=sorted(set(shodanalysis))
+                    file.write('<servers>')
+                    for x in shodanalysis:
+                        #page.pre(x)
+                        file.write('<server>' + x + '</server>')
+                    file.write('</servers>')
+                    
+
+            file.write('</theHarvester>')
+            file.flush()
+            file.close()
             print "Files saved!"
         except Exception as er:
             print "Error saving XML file: " + er
