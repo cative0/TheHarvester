@@ -6,5 +6,5 @@
 
 usage
 ---------------------------------------------------------------------------------------------
-google search: python xHarvester.py -d input/target.txt -l 500 -b google -f myresults.html"
-all search: python xHarvester.py -d input/target.txt -l 500 -b all -f myresults.html"
+google search: python xHarvester.py -d input/target.txt -l 500 -b google -f myresults.html
+all search: python xHarvester.py -d input/target.txt -l 500 -b all -f myresults.html
