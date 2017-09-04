@@ -258,7 +258,7 @@ def start(opts):
                 feeds = json.load(feedsjson)
 
             with open(filename, 'w') as feedsjson:
-                entry = {'id': len(feeds), 'url': word, 'email': all_emails}
+                entry = {'id': len(feeds), 'url': word, 'email': all_emails, 'email_total': len(all_emails)}
                 feeds.append(entry)
                 json.dump(feeds, feedsjson)
 
