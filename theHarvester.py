@@ -245,9 +245,23 @@ def start(opts):
     #Reporting#######################################################
     if filename != "":
         try:
-            filename = filename.split(".")[0] + ".json"
-            with open(filename, 'w') as f:
-                json.dump({'email': all_emails}, f)
+            # filename = filename.split(".")[0] + ".json"
+            # with open(filename, 'w') as f:
+            #     json.dump({'email': all_emails}, f)
+
+            filename = r"output\tw.json"
+            if not os.path.exists(filename):
+                with open(filename, 'w') as f:
+                    json.dump([], f)
+
+            with open(filename, mode='r') as feedsjson:
+                feeds = json.load(feedsjson)
+
+            with open(filename, 'w') as feedsjson:
+                entry = {'id': len(feeds), 'url': word, 'email': all_emails}
+                feeds.append(entry)
+                json.dump(feeds, feedsjson)
+
 
             print "Files saved!"
         except Exception as er:
